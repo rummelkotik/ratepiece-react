@@ -1,0 +1,297 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-main: #0a0a0a;
+  --bg-sidebar: #121212;
+  --bg-card: #141414;
+  --bg-input: #1c1c1e;
+  --glass-bg: #141414;
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-hover: #1c1c1e;
+  --accent: #ff7a00;
+  --accent-orange: #ff7a00;
+  --accent-cyan: #ff7a00;
+  --accent-cyan-text: #ff7a00;
+  --text-main: #f5f5f5;
+  --text-muted: #a1a1aa;
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-card: rgba(255, 255, 255, 0.05);
+  --danger: #fb7185;
+}
+
+.light,
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-main: #f5f5f5;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f4f4f5;
+  --glass-bg: #ffffff;
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-hover: #f4f4f5;
+  --accent: #ff7a00;
+  --accent-orange: #ff7a00;
+  --accent-cyan: #ff7a00;
+  --accent-cyan-text: #ff7a00;
+  --text-main: #1a1a1a;
+  --text-muted: #71717a;
+  --border-color: rgba(0, 0, 0, 0.05);
+  --border-card: rgba(0, 0, 0, 0.05);
+  --danger: #e11d48;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #0a0a0a;
+  background-image: radial-gradient(circle at 10% 20%, rgba(255, 122, 0, 0.07), transparent 40%), radial-gradient(circle at 90% 80%, rgba(80, 50, 120, 0.04), transparent 40%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings font */
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* Global reset for number input spin buttons */
+::-webkit-outer-spin-button,
+::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input[type=number] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+/* Select styling fallback */
+select {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  color: #1a1a1a !important;
+}
+select option {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+}
+.dark select,
+[data-theme="dark"] select {
+  background-color: rgba(26, 26, 26, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+.dark select option,
+[data-theme="dark"] select option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: var(--glass-hover);
+  border-color: rgba(255, 122, 0, 0.3);
+  box-shadow: 0 8px 30px rgba(255, 122, 0, 0.08);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-card);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 122, 0, 0.4);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Date input mobile & cross-browser adjustments */
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}
+
+/* Custom Day Picker (Dark Glass Premium DatePicker) */
+.custom-day-picker {
+  --rdp-accent-color: #FF7A00;
+  --rdp-accent-background-color: #FF7A00;
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-border-radius: 9999px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: #ffffff;
+}
+
+.custom-day-picker .rdp-root {
+  margin: 0;
+  position: relative;
+}
+
+.custom-day-picker .rdp-month_caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 2.5rem;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: #ffffff;
+  padding: 0 2.5rem;
+}
+
+.custom-day-picker .rdp-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 0.25rem;
+  pointer-events: none;
+}
+
+.custom-day-picker .rdp-button_previous,
+.custom-day-picker .rdp-button_next {
+  pointer-events: auto;
+  color: #ffffff;
+  border-radius: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.custom-day-picker .rdp-button_previous:hover,
+.custom-day-picker .rdp-button_next:hover {
+  color: #FF7A00;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.custom-day-picker .rdp-weekday {
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+.custom-day-picker .rdp-day {
+  width: 40px;
+  height: 40px;
+  padding: 1px;
+  text-align: center;
+}
+
+.custom-day-picker .rdp-day_button {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.custom-day-picker .rdp-day_button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Selected: round orange background, white text */
+.custom-day-picker .rdp-selected .rdp-day_button {
+  background-color: #FF7A00 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+  border: 1px solid #FF7A00 !important;
+  box-shadow: 0 0 14px rgba(255, 122, 0, 0.45) !important;
+}
+
+/* Today: white border without fill (when not selected) */
+.custom-day-picker .rdp-today:not(.rdp-selected) .rdp-day_button {
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+}
+
+/* Outside days: muted text-gray-600 */
+.custom-day-picker .rdp-outside .rdp-day_button {
+  color: #52525b !important;
+  opacity: 0.6 !important;
+}
+
+/* Disabled */
+.custom-day-picker .rdp-disabled .rdp-day_button {
+  opacity: 0.25 !important;
+  cursor: not-allowed;
+}

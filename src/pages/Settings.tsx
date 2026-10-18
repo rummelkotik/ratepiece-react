@@ -1,0 +1,294 @@
+import React, { useState } from 'react';
+import { useStore } from '../store/useStore';
+import { exportBackup, parseImportBackup } from '../lib/storage';
+import { Download, Upload, Trash2, Moon, Sun, Heart } from 'lucide-react';
+import { Logo } from '../components/Logo';
+
+export const Settings: React.FC = () => {
+  const {
+    settings,
+    services,
+    entries,
+    setSettings,
+    toggleTheme,
+    importData,
+    resetData,
+  } = useStore();
+
+  const [incomeGoalInput, setIncomeGoalInput] = useState<string>(
+    String(settings.incomeGoal)
+  );
+  const [taxRateInput, setTaxRateInput] = useState<string>(
+    String(settings.taxRate)
+  );
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Save Settings
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newGoal = Number(incomeGoalInput);
+    const newTax = Number(taxRateInput);
+
+    if (!Number.isFinite(newGoal) || newGoal < 0) {
+      alert('Введите корректную цель по доходу (число >= 0)');
+      return;
+    }
+    if (!Number.isFinite(newTax) || newTax < 0 || newTax > 100) {
+      alert('Налог должен быть от 0 до 100%');
+      return;
+    }
+
+    setSettings({
+      ...settings,
+      incomeGoal: newGoal,
+      taxRate: newTax,
+    });
+
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  // Export JSON backup
+  const handleExport = () => {
+    exportBackup(services, entries);
+  };
+
+  // Import JSON backup
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const { services: impServices, entries: impEntries } = parseImportBackup(text);
+
+        if (!impServices && !impEntries) {
+          alert('Файл не содержит корректных данных для импорта');
+          return;
+        }
+
+        importData(impServices, impEntries);
+        alert('Данные успешно импортированы!');
+      } catch (err) {
+        alert('Ошибка при чтении файла резервной копии: ' + (err as Error).message);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
+  };
+
+  // Reset all data
+  const handleReset = () => {
+    const confirmed = window.confirm(
+      'Вы уверены? Все записи, расценки и настройки будут удалены безвозвратно.'
+    );
+    if (!confirmed) return;
+
+    resetData();
+    alert('Все данные были успешно сброшены.');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-text-main font-heading">Настройки</h2>
+        <p className="text-sm text-text-muted">Настройте приложение и управляйте вашими данными</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Main Settings Form */}
+        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+          <form onSubmit={handleSaveSettings} className="space-y-5">
+            <h3 className="text-base font-bold text-text-main font-heading">Основные настройки</h3>
+
+            {/* Dark / Light Theme Toggle */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-black/10 dark:bg-[#141414] text-[#FF7A00] flex items-center justify-center shrink-0">
+                  {settings.theme === 'dark' ? (
+                    <Moon className="w-5 h-5" strokeWidth={1.75} />
+                  ) : (
+                    <Sun className="w-5 h-5" strokeWidth={1.75} />
+                  )}
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-text-main block">
+                    Тёмная тема
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    {settings.theme === 'dark' ? 'Включена тёмная тема' : 'Включена светлая тема'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Switch */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label="Переключить тему"
+                className={`relative inline-flex h-[20px] w-[40px] flex-shrink-0 cursor-pointer items-center rounded-full p-[2px] transition-colors duration-300 focus:outline-none ${
+                  settings.theme === 'dark' ? 'bg-[#FF7A00]' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-[16px] w-[16px] transform rounded-full bg-white shadow-md transition-transform duration-300 ${
+                    settings.theme === 'dark' ? 'translate-x-[20px]' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Monthly Income Goal */}
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                Цель по доходу (на месяц)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="5000"
+                  value={incomeGoalInput}
+                  onChange={(e) => setIncomeGoalInput(e.target.value)}
+                  className="w-full bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-accent-orange pr-8 font-mono tabular-nums"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted pointer-events-none select-none">
+                  ₽
+                </span>
+              </div>
+              <span className="text-[11px] text-text-muted mt-1 block">
+                Всегда отслеживается за текущий месяц на дашборде
+              </span>
+            </div>
+
+            {/* Tax Rate */}
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                Ставка налога (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={taxRateInput}
+                  onChange={(e) => setTaxRateInput(e.target.value)}
+                  className="w-full bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 text-text-main rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-accent-orange pr-8 font-mono tabular-nums"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted pointer-events-none select-none">
+                  %
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-[#FF7A00] text-gray-950 font-bold py-3 px-5 rounded-full hover:opacity-95 active:scale-[0.99] transition-all shadow-md cursor-pointer"
+            >
+              {saveSuccess ? '✓ Настройки сохранены!' : 'Сохранить настройки'}
+            </button>
+          </form>
+        </div>
+
+        {/* Data Management Card */}
+        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+          <div className="space-y-4">
+            <h3 className="text-base font-bold text-text-main font-heading">Управление данными</h3>
+
+            {/* Export row */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-black/10 dark:bg-[#141414] text-[#FF7A00] flex items-center justify-center shrink-0">
+                  <Download className="w-5 h-5" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-text-main block">
+                    Экспорт данных
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    Скачать резервную копию в JSON
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleExport}
+                className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-4 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                Экспорт
+              </button>
+            </div>
+
+            {/* Import row */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-black/10 dark:bg-[#141414] text-text-main flex items-center justify-center shrink-0">
+                  <Upload className="w-5 h-5" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-text-main block">
+                    Импорт данных
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    Восстановить из файла JSON
+                  </span>
+                </div>
+              </div>
+              <label className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-4 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm">
+                Импорт
+                <input
+                  type="file"
+                  accept="application/json"
+                  onChange={handleImportFile}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Reset row */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-text-main block">
+                    Сброс данных
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    Очистить все сохранённые записи
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="bg-rose-500/15 text-rose-400 hover:bg-rose-500 hover:text-white font-semibold text-xs px-4 py-2 rounded-full active:scale-95 transition-all cursor-pointer"
+              >
+                Сброс
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* About Application Card */}
+      <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-6 text-center">
+        <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-2">
+          <Logo size={56} className="justify-center mb-1" />
+          <h3 className="text-lg font-bold font-heading text-text-main tracking-tight">RatePiece</h3>
+          <span className="inline-block bg-accent-orange/15 text-accent-orange text-xs font-semibold px-3 py-1 rounded-full">
+            Версия 1.1.0 (React + TypeScript)
+          </span>
+          <p className="text-xs text-text-muted flex items-center justify-center gap-1 pt-1">
+            Сделано с <Heart className="w-3.5 h-3.5 text-accent-orange fill-accent-orange" strokeWidth={1.5} /> для вашего удобства
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
