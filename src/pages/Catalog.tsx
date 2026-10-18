@@ -146,56 +146,54 @@ export const Catalog: React.FC = () => {
                     items.map((service) => (
                       <div
                         key={service.id}
-                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 hover:border-[#FF7A00]/40 transition-all"
+                        className="flex flex-col p-3.5 sm:p-4 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 hover:border-[#FF7A00]/40 transition-all"
                       >
-                        {/* Icon */}
-                        <div className="hidden sm:flex w-8 h-8 rounded-full bg-black/10 dark:bg-[#141414] text-[#FF7A00] items-center justify-center shrink-0">
-                          <Wrench className="w-4 h-4" strokeWidth={1.75} />
-                        </div>
-
-                        {/* Name Input */}
-                        <input
-                          type="text"
-                          value={service.name}
-                          onChange={(e) => updateService(service.id, { name: e.target.value })}
-                          placeholder="Название работы..."
-                          className="flex-1 bg-transparent border-0 text-text-main text-sm font-medium focus:outline-none focus:ring-1 focus:ring-accent-orange px-2 py-1 rounded-lg"
-                        />
-
-                        {/* Unit badge */}
-                        <span className="text-xs text-text-muted px-2.5 py-1 rounded-full bg-black/10 dark:bg-[#141414] border border-black/5 dark:border-white/5 self-center font-medium">
-                          {service.unit || 'шт'}
-                        </span>
-
-                        {/* Price Input with integrated ₽ */}
-                        <div className="relative flex items-center">
+                        {/* Top: Service Name (Full width, wrapping) */}
+                        <div className="w-full flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-black/10 dark:bg-[#141414] text-[#FF7A00] flex items-center justify-center shrink-0 mt-0.5">
+                            <Wrench className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          </div>
                           <input
-                            type="number"
-                            min="0"
-                            step="50"
-                            value={service.price || ''}
-                            onChange={(e) =>
-                              updateService(service.id, {
-                                price: parseFloat(e.target.value) || 0,
-                              })
-                            }
-                            placeholder="0"
-                            className="w-24 bg-black/10 dark:bg-[#141414] border border-black/5 dark:border-white/5 text-right text-sm font-bold font-mono tabular-nums text-accent-orange focus:outline-none focus:border-accent-orange pl-2 pr-6 py-1 rounded-full"
+                            type="text"
+                            value={service.name}
+                            onChange={(e) => updateService(service.id, { name: e.target.value })}
+                            placeholder="Название работы..."
+                            className="w-full bg-transparent border-0 text-text-main text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-accent-orange px-1 py-0.5 rounded-lg"
                           />
-                          <span className="absolute right-2 text-xs text-text-muted font-bold pointer-events-none select-none">
-                            ₽
-                          </span>
                         </div>
 
-                        {/* Delete Button */}
-                        <button
-                          type="button"
-                          onClick={() => deleteService(service.id)}
-                          className="w-7 h-7 rounded-full bg-black/10 dark:bg-[#141414] text-gray-400 hover:text-rose-400 hover:bg-rose-500/15 flex items-center justify-center transition-colors self-center cursor-pointer"
-                          title="Удалить позицию"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {/* Bottom: Controls Panel (Price left, Delete right) */}
+                        <div className="flex items-center justify-between mt-4 gap-2 pt-1 border-t border-black/5 dark:border-white/5">
+                          {/* Price Input with integrated ₽ */}
+                          <div className="relative flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              step="50"
+                              value={service.price || ''}
+                              onChange={(e) =>
+                                updateService(service.id, {
+                                  price: parseFloat(e.target.value) || 0,
+                                })
+                              }
+                              placeholder="0"
+                              className="w-28 sm:w-32 bg-black/10 dark:bg-[#141414] border border-black/5 dark:border-white/5 text-right text-sm font-bold font-mono tabular-nums text-accent-orange focus:outline-none focus:border-accent-orange pl-3 pr-7 py-1.5 rounded-full"
+                            />
+                            <span className="absolute right-2.5 text-xs text-text-muted font-bold pointer-events-none select-none">
+                              ₽
+                            </span>
+                          </div>
+
+                          {/* Delete Button (Compact, square/round, translucent red) */}
+                          <button
+                            type="button"
+                            onClick={() => deleteService(service.id)}
+                            className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
+                            title="Удалить позицию"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
