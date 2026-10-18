@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { exportBackup, parseImportBackup } from '../lib/storage';
-import { Download, Upload, Trash2, Moon, Sun, Heart } from 'lucide-react';
+import { parseImportBackup } from '../lib/storage';
+import { Download, Upload, Trash2, Moon, Sun, Heart, Copy, Check, X } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
 export const Settings: React.FC = () => {
@@ -22,6 +22,15 @@ export const Settings: React.FC = () => {
     String(settings.taxRate)
   );
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Export / Import Modals State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportJson, setExportJson] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Save Settings
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -48,35 +57,80 @@ export const Settings: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  // Export JSON backup
-  const handleExport = () => {
-    exportBackup(services, entries);
+  // Open Export Modal
+  const handleOpenExport = () => {
+    const backupData = {
+      services,
+      entries,
+      settings,
+      exportedAt: new Date().toISOString(),
+    };
+    setExportJson(JSON.stringify(backupData, null, 2));
+    setCopied(false);
+    setShowExportModal(true);
   };
 
-  // Import JSON backup
-  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const { services: impServices, entries: impEntries } = parseImportBackup(text);
-
-        if (!impServices && !impEntries) {
-          alert('Файл не содержит корректных данных для импорта');
-          return;
-        }
-
-        importData(impServices, impEntries);
-        alert('Данные успешно импортированы!');
-      } catch (err) {
-        alert('Ошибка при чтении файла резервной копии: ' + (err as Error).message);
+  // Copy to clipboard
+  const handleCopyExport = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(exportJson);
+      } else {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = exportJson;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
       }
-    };
-    reader.readAsText(file, 'UTF-8');
-    e.target.value = '';
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      alert('Не удалось скопировать автоматически. Выделите текст и скопируйте вручную.');
+    }
+  };
+
+  // Open Import Modal
+  const handleOpenImport = () => {
+    setImportJsonText('');
+    setImportError(null);
+    setShowImportModal(true);
+  };
+
+  // Apply Imported JSON
+  const handleApplyImport = () => {
+    const trimmed = importJsonText.trim();
+    if (!trimmed) {
+      setImportError('Пожалуйста, вставьте JSON-текст для импорта');
+      return;
+    }
+
+    try {
+      const { services: impServices, entries: impEntries } = parseImportBackup(trimmed);
+
+      if (!impServices && !impEntries) {
+        setImportError('В тексте не найдены корректные данные (services или entries)');
+        return;
+      }
+
+      // Check if settings were also exported
+      try {
+        const parsedObj = JSON.parse(trimmed);
+        if (parsedObj.settings && typeof parsedObj.settings === 'object') {
+          setSettings(parsedObj.settings);
+        }
+      } catch {
+        // Ignore settings parse error if base data parsed
+      }
+
+      importData(impServices, impEntries);
+      setShowImportModal(false);
+      alert('Данные успешно импортированы!');
+      window.location.reload();
+    } catch (err) {
+      setImportError('Ошибка формата JSON: ' + (err as Error).message);
+    }
   };
 
   // Reset all data
@@ -210,13 +264,13 @@ export const Settings: React.FC = () => {
                     Экспорт данных
                   </span>
                   <span className="text-xs text-text-muted">
-                    Скачать резервную копию в JSON
+                    Скопировать резервную копию JSON
                   </span>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={handleExport}
+                onClick={handleOpenExport}
                 className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-4 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 Экспорт
@@ -234,19 +288,17 @@ export const Settings: React.FC = () => {
                     Импорт данных
                   </span>
                   <span className="text-xs text-text-muted">
-                    Восстановить из файла JSON
+                    Вставить текст резервной копии
                   </span>
                 </div>
               </div>
-              <label className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-4 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm">
+              <button
+                type="button"
+                onClick={handleOpenImport}
+                className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-4 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm"
+              >
                 Импорт
-                <input
-                  type="file"
-                  accept="application/json"
-                  onChange={handleImportFile}
-                  className="hidden"
-                />
-              </label>
+              </button>
             </div>
 
             {/* Reset row */}
@@ -275,6 +327,127 @@ export const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#FF7A00]/10 text-[#FF7A00] flex items-center justify-center shrink-0">
+                  <Download className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-text-main font-heading">Экспорт данных</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="w-8 h-8 rounded-full text-gray-400 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-muted">
+              Скопируйте этот текст и вставьте его через «Импорт» на любом другом устройстве или в PWA:
+            </p>
+
+            <textarea
+              readOnly
+              value={exportJson}
+              onFocus={(e) => e.target.select()}
+              className="w-full h-48 bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 text-text-main font-mono text-xs rounded-xl p-3 focus:outline-none focus:border-accent-orange resize-none select-all"
+            />
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-text-muted hover:text-text-main rounded-full transition-colors cursor-pointer"
+              >
+                Закрыть
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyExport}
+                className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-5 py-2 rounded-full flex items-center gap-1.5 hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    Скопировано!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    Скопировать
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-black/10 dark:bg-[#1c1c1e] text-text-main flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-text-main font-heading">Импорт данных</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="w-8 h-8 rounded-full text-gray-400 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-muted">
+              Вставьте сюда скопированный JSON-текст резервной копии:
+            </p>
+
+            <textarea
+              value={importJsonText}
+              onChange={(e) => {
+                setImportJsonText(e.target.value);
+                if (importError) setImportError(null);
+              }}
+              placeholder='{"services": [...], "entries": [...]}'
+              className="w-full h-48 bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 text-text-main font-mono text-xs rounded-xl p-3 focus:outline-none focus:border-accent-orange resize-none"
+            />
+
+            {importError && (
+              <div className="text-xs text-rose-500 font-medium">
+                {importError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-text-muted hover:text-text-main rounded-full transition-colors cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyImport}
+                className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-5 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                Применить импорт
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* About Application Card */}
       <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-6 text-center">

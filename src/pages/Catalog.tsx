@@ -169,7 +169,8 @@ export const Catalog: React.FC = () => {
                             <input
                               type="number"
                               min="0"
-                              step="50"
+                              step="any"
+                              inputMode="decimal"
                               value={service.price || ''}
                               onChange={(e) =>
                                 updateService(service.id, {

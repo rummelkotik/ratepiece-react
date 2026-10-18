@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" fill="none" width="44" height="44"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><defs>
+    <!-- Main Vibrant Orange Gradient -->
+    <linearGradient id="rp-orange-gradient" x1="2" y1="4" x2="42" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFA64D"></stop>
+      <stop offset="45%" stop-color="#FF7A00"></stop>
+      <stop offset="100%" stop-color="#D95700"></stop>
+    </linearGradient>
+
+    <!-- Orange Glow filter -->
+    <filter id="rp-glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"></feGaussianBlur>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+    </filter>
+  </defs><rect x="1" y="1" width="42" height="42" rx="12" fill="#18181b" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5"></rect><path d="M 12 28 A 12 12 0 1 1 32 24" stroke="url(#rp-orange-gradient)" stroke-width="3.5" stroke-linecap="round" filter="url(#rp-glow-filter)"></path><path d="M 12 28 L 22 22 L 22 13" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M 22 12 H 29 C 32.3 12 34 14.2 34 17 C 34 19.8 32.3 22 29 22 H 22 Z" fill="url(#rp-orange-gradient)"></path><circle cx="22" cy="22" r="3.2" fill="#0a0a0a" stroke="#ffffff" stroke-width="1.8"></circle><path d="M 24.5 24.5 L 33 33" stroke="url(#rp-orange-gradient)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="12" cy="16" r="1.3" fill="#f4f4f5"></circle><circle cx="15" cy="11" r="1.3" fill="#FF7A00"></circle></svg>

@@ -258,7 +258,8 @@ export const AddWork: React.FC = () => {
                   <input
                     type="number"
                     min="0"
-                    step="50"
+                    step="any"
+                    inputMode="decimal"
                     placeholder="0"
                     value={singlePrice}
                     onChange={(e) => setSinglePrice(e.target.value)}
