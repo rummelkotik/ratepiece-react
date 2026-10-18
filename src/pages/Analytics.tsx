@@ -34,9 +34,13 @@ export const Analytics: React.FC = () => {
   const prevEntries = filterEntriesByPeriod(entries, analyticsPeriod, prevDate);
   const prevAgg = aggregateEntries(prevEntries, services, settings.taxRate);
 
-  // Averages and top work
-  const avgEarnings = currentAgg.count > 0 ? currentAgg.gross / currentAgg.count : 0;
-  const prevAvgEarnings = prevAgg.count > 0 ? prevAgg.gross / prevAgg.count : 0;
+  // Averages and top work: Average daily earnings based on unique working days
+  const currentUniqueDays = new Set(currentEntries.map((e) => e.date).filter(Boolean)).size;
+  const avgEarnings = currentUniqueDays > 0 ? currentAgg.gross / currentUniqueDays : 0;
+
+  const prevUniqueDays = new Set(prevEntries.map((e) => e.date).filter(Boolean)).size;
+  const prevAvgEarnings = prevUniqueDays > 0 ? prevAgg.gross / prevUniqueDays : 0;
+
   const topWork = getTopWork(currentAgg.byWork);
 
   // Chart data: Income by Days (for selected month)
@@ -94,7 +98,7 @@ export const Analytics: React.FC = () => {
           icon={<Layers className="w-5 h-5 text-accent-orange" />}
         />
         <SummaryCard
-          label="Средний заработок"
+          label="Средний в день"
           value={formatMoney(avgEarnings)}
           trend={formatTrend(avgEarnings, prevAvgEarnings)}
           color="orange"
@@ -111,15 +115,15 @@ export const Analytics: React.FC = () => {
       </div>
 
       {/* 2 Charts: Days & Months */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-[#1a1a1a] dark:text-white font-heading">Доход по дням</h3>
             <span className="text-xs text-gray-500 dark:text-gray-400">Текущий месяц</span>
           </div>
           <IncomeBarChart data={daysChartData} unit=" ₽" color="#FF7A00" />
         </div>
-        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6">
+        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-w-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-[#1a1a1a] dark:text-white font-heading">Доход по месяцам</h3>
             <span className="text-xs text-gray-500 dark:text-gray-400">Годовая динамика</span>
@@ -129,15 +133,15 @@ export const Analytics: React.FC = () => {
       </div>
 
       {/* Split Row: Category Doughnut & Key Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Doughnut Chart */}
-        <div className="lg:col-span-2 bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6">
+        <div className="lg:col-span-2 bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 min-w-0">
           <h3 className="text-base font-bold text-[#1a1a1a] dark:text-white font-heading mb-4">Доход по видам работ</h3>
           <CategoryDoughnut data={currentAgg.byCategory} totalGross={currentAgg.gross} />
         </div>
 
         {/* Key Indicators */}
-        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col justify-between">
+        <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col justify-between min-w-0">
           <h3 className="text-base font-bold text-[#1a1a1a] dark:text-white font-heading mb-4">Ключевые показатели</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5">
@@ -155,7 +159,7 @@ export const Analytics: React.FC = () => {
                 <TrendingUp className="w-5 h-5" strokeWidth={1.75} />
               </div>
               <div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 block font-medium">Средний заработок за работу</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 block font-medium">Средний заработок в день</span>
                 <span className="text-base font-bold font-mono tabular-nums text-[#1a1a1a] dark:text-white font-heading">{formatMoney(avgEarnings)}</span>
               </div>
             </div>

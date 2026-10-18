@@ -35,10 +35,11 @@ export interface AggregationResult {
   net: number;
   containers: number;
   count: number;
+  avgPerDay: number; // <--- ДОБАВЬТЕ ВОТ ЭТУ СТРОКУ
   byCategory: Record<string, number>;
   byWork: Record<string, number>;
   byDay: Record<number, number>;
   byMonth: Record<number, number>;
-  rowsMain: Array<{ category: string; name: string; quantity: number; totalSum: number }>;
-  rowsFrames: Array<{ category: string; name: string; quantity: number; totalSum: number }>;
+  rowsMain: any[];
+  rowsFrames: any[];
 }

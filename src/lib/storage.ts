@@ -109,37 +109,99 @@ export function exportBackup(services: Service[], entries: Entry[]): void {
   a.remove();
 }
 
-export function parseImportBackup(jsonStr: string): { services?: Service[]; entries?: Entry[] } {
-  const content = JSON.parse(jsonStr);
+export function parseImportBackup(jsonStr: string): {
+  services?: Service[];
+  entries?: Entry[];
+  settings?: Settings;
+} {
+  let content: any;
+  try {
+    content = JSON.parse(jsonStr);
+  } catch (err) {
+    throw new Error('Неверный формат файла. Убедитесь, что это корректный JSON.');
+  }
+
+  if (!content || (typeof content !== 'object' && !Array.isArray(content))) {
+    throw new Error('Файл не содержит корректных данных для импорта');
+  }
+
   let parsedServices: Service[] | undefined;
   let parsedEntries: Entry[] | undefined;
+  let parsedSettings: Settings | undefined;
 
-  if (Array.isArray(content)) {
-    parsedServices = sanitizeServices(content).map((item, index) => ({
-      id: item.id || `srv_imp_${Date.now()}_${index}`,
-      category: item.category || 'Общие',
-      name: item.name || 'Работа',
-      price: Number(item.price) || 0,
-      isFixed: !!item.isFixed,
-      is_tax_free: !!item.is_tax_free,
-    }));
-  } else if (content && typeof content === 'object') {
-    if (Array.isArray(content.services)) {
-      parsedServices = sanitizeServices(content.services).map((item, index) => ({
-        id: item.id || `srv_imp_${Date.now()}_${index}`,
-        category: item.category || 'Общие',
-        name: item.name || 'Работа',
-        price: Number(item.price) || 0,
-        isFixed: !!item.isFixed,
-        is_tax_free: !!item.is_tax_free,
-      }));
+  // Helper to generate IDs
+  const genId = (prefix: string, idx: number) => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return `${prefix}_${crypto.randomUUID()}`;
     }
-    if (Array.isArray(content.entries)) {
-      parsedEntries = content.entries;
+    return `${prefix}_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 7)}`;
+  };
+
+  // Helper to map and sanitize raw service
+  const mapService = (item: any, index: number): Service => ({
+    id: item.id ? String(item.id) : genId('srv', index),
+    category: (item.category || item.group || 'Общие').trim(),
+    name: (item.name || item.title || item.work || 'Работа').trim(),
+    price: Number(item.price || item.cost || item.rate) || 0,
+    unit: item.unit || 'шт',
+    isFixed: !!(item.isFixed || item.is_fixed),
+    is_tax_free: !!(item.is_tax_free || item.taxFree),
+  });
+
+  // Helper to map and sanitize raw entry
+  const mapEntry = (item: any, index: number): Entry => {
+    const rawDate = item.date || item.created_at || item.createdAt;
+    let dateStr = '';
+    if (rawDate) {
+      // If date is ISO string with time or YYYY-MM-DD
+      dateStr = String(rawDate).split('T')[0];
+    } else {
+      dateStr = new Date().toISOString().split('T')[0];
+    }
+
+    return {
+      id: item.id ? String(item.id) : genId('entry', index),
+      date: dateStr,
+      service_id: item.service_id ?? item.serviceId ?? null,
+      name: item.name || item.work || item.title,
+      category: item.category || item.group,
+      price: item.price !== undefined ? Number(item.price) : undefined,
+      quantity: Number(item.quantity || item.qty || item.count) || 1,
+    };
+  };
+
+  // Case 1: Plain Array
+  if (Array.isArray(content)) {
+    if (content.length === 0) {
+      return {};
+    }
+    // Inspect first element to determine if array contains entries or services
+    const first = content[0];
+    const isEntry = first && ('date' in first || 'quantity' in first || 'service_id' in first);
+
+    if (isEntry) {
+      parsedEntries = content.map((item, idx) => mapEntry(item, idx));
+    } else {
+      parsedServices = sanitizeServices(content).map((item, idx) => mapService(item, idx));
+    }
+  } else if (typeof content === 'object') {
+    // Case 2: Object with keys: services / entries / settings, or alternative legacy keys
+    const rawServices = content.services || content.app_services || content.piecework_services;
+    const rawEntries = content.entries || content.app_entries || content.items || content.records;
+
+    if (Array.isArray(rawServices)) {
+      parsedServices = sanitizeServices(rawServices).map((item, idx) => mapService(item, idx));
+    }
+    if (Array.isArray(rawEntries)) {
+      parsedEntries = rawEntries.map((item, idx) => mapEntry(item, idx));
+    }
+
+    if (content.settings && typeof content.settings === 'object') {
+      parsedSettings = content.settings;
     }
   }
 
-  return { services: parsedServices, entries: parsedEntries };
+  return { services: parsedServices, entries: parsedEntries, settings: parsedSettings };
 }
 
 export function resetAllStorage(): void {

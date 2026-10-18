@@ -92,6 +92,7 @@ export function aggregateEntries(
     net: 0,
     containers: 0,
     count: 0,
+    avgPerDay: 0, // <-- Добавлено поле
     byCategory: {},
     byWork: {},
     byDay: {},
@@ -100,12 +101,18 @@ export function aggregateEntries(
     rowsFrames: [],
   };
 
+  // Набор для подсчета уникальных рабочих дней
+  const uniqueDates = new Set<string>();
+
   const rowsMainMap: Record<string, { category: string; name: string; quantity: number; totalSum: number }> = {};
   const rowsFramesMap: Record<string, { category: string; name: string; quantity: number; totalSum: number }> = {};
 
   for (const e of entries) {
     const sum = sumOf(e, services);
     const qty = Number(e.quantity) || 1;
+
+    // Сохраняем дату для расчета среднего за день
+    if (e.date) uniqueDates.add(e.date);
 
     agg.gross += sum;
     agg.count += qty;
@@ -142,6 +149,9 @@ export function aggregateEntries(
   const taxRateDecimal = (Number(taxRatePercent) || 0) / 100;
   agg.tax = agg.taxable * taxRateDecimal;
   agg.net = agg.gross - agg.tax;
+
+  // Считаем средний заработок за день (общая сумма делится на кол-во уникальных дней)
+  agg.avgPerDay = uniqueDates.size > 0 ? agg.gross / uniqueDates.size : 0;
 
   agg.rowsMain = Object.values(rowsMainMap).sort((a, b) => b.totalSum - a.totalSum);
   agg.rowsFrames = Object.values(rowsFramesMap).sort((a, b) => b.totalSum - a.totalSum);
