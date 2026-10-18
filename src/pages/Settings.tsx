@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { parseImportBackup } from '../lib/storage';
-import { Download, Upload, Trash2, Moon, Sun, Heart, Copy, Check, X } from 'lucide-react';
+import { Download, Upload, Trash2, Moon, Sun, Heart } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
 export const Settings: React.FC = () => {
@@ -18,10 +18,9 @@ export const Settings: React.FC = () => {
   const [incomeGoalInput, setIncomeGoalInput] = useState<string>(String(settings.incomeGoal));
   const [taxRateInput, setTaxRateInput] = useState<string>(String(settings.taxRate));
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportJson, setExportJson] = useState('');
-  const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,49 +41,63 @@ export const Settings: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
+  // 1. Export: Download backup file (.json)
   const handleDownloadExport = () => {
-    const backupData = { services, entries, settings, exportedAt: new Date().toISOString() };
-    const jsonStr = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const dateStr = new Date().toISOString().split('T')[0];
-    a.download = `ratepiece-backup-${dateStr}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    alert('Данные успешно экспортированы!');
-  };
-
-  const handleOpenExport = () => {
-    const backupData = { services, entries, settings, exportedAt: new Date().toISOString() };
-    setExportJson(JSON.stringify(backupData, null, 2));
-    setCopied(false);
-    setShowExportModal(true);
-  };
-
-  const handleCopyExport = async () => {
     try {
+      const backupData = {
+        services,
+        entries,
+        settings,
+        exportedAt: new Date().toISOString(),
+      };
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ratepiece-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('Данные успешно экспортированы!');
+    } catch (err) {
+      alert('Ошибка экспорта: ' + (err as Error).message);
+    }
+  };
+
+  // 2. Export: Copy JSON text directly to clipboard
+  const handleCopyTextExport = async () => {
+    try {
+      const backupData = {
+        services,
+        entries,
+        settings,
+        exportedAt: new Date().toISOString(),
+      };
+      const jsonStr = JSON.stringify(backupData, null, 2);
+
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(exportJson);
+        await navigator.clipboard.writeText(jsonStr);
       } else {
         const textarea = document.createElement('textarea');
-        textarea.value = exportJson;
+        textarea.value = jsonStr;
         document.body.appendChild(textarea);
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
       }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2500);
+      alert('Скопировано в буфер обмена!');
     } catch {
-      alert('Не удалось скопировать автоматически.');
+      alert('Не удалось скопировать в буфер обмена.');
     }
   };
 
-  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 3. Import: Read uploaded file and load into store
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -92,10 +105,15 @@ export const Settings: React.FC = () => {
     reader.onload = (event) => {
       try {
         const text = event.target?.result as string;
+        if (!text || !text.trim()) {
+          alert('Выбран пустой файл');
+          return;
+        }
+
         const { services: impServices, entries: impEntries, settings: impSettings } = parseImportBackup(text);
 
         if (!impServices && !impEntries) {
-          alert('Файл не содержит корректных данных');
+          alert('Файл не содержит корректных данных (услуг или записей)');
           return;
         }
 
@@ -107,8 +125,11 @@ export const Settings: React.FC = () => {
         alert('Данные успешно импортированы!');
         window.location.reload();
       } catch (err) {
-        alert('Ошибка импорта: ' + (err as Error).message);
+        alert('Ошибка при импорте файла: ' + (err as Error).message);
       }
+    };
+    reader.onerror = () => {
+      alert('Не удалось прочитать выбранный файл');
     };
     reader.readAsText(file, 'UTF-8');
     e.target.value = '';
@@ -187,15 +208,25 @@ export const Settings: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-text-main block">Экспорт данных</span>
-                  <span className="text-xs text-text-muted">Скачать .json файл</span>
+                  <span className="text-xs text-text-muted">Скачать .json или скопировать</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={handleDownloadExport} className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-3.5 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer">
+                <button
+                  type="button"
+                  onClick={handleDownloadExport}
+                  className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-3.5 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer"
+                  title="Скачать файл ratepiece-backup.json"
+                >
                   Скачать
                 </button>
-                <button type="button" onClick={handleOpenExport} className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-3.5 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm">
-                  Текст
+                <button
+                  type="button"
+                  onClick={handleCopyTextExport}
+                  className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-3.5 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm"
+                  title="Скопировать JSON в буфер обмена"
+                >
+                  {copySuccess ? 'Скопировано!' : 'Текст'}
                 </button>
               </div>
             </div>
@@ -211,10 +242,22 @@ export const Settings: React.FC = () => {
                   <span className="text-xs text-text-muted">Загрузить файл .json с устройства</span>
                 </div>
               </div>
-              <label className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-4 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer inline-flex items-center justify-center">
-                Выбрать файл
-                <input type="file" accept=".json,application/json" onChange={handleImportFile} className="hidden" />
-              </label>
+              <div>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  ref={fileInputRef}
+                  onChange={handleFileImport}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-4 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer"
+                >
+                  Выбрать файл
+                </button>
+              </div>
             </div>
 
             {/* Reset row */}
@@ -235,32 +278,6 @@ export const Settings: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#FF7A00]/10 text-[#FF7A00] flex items-center justify-center shrink-0">
-                  <Download className="w-4 h-4" />
-                </div>
-                <h3 className="text-base font-bold text-text-main font-heading">Экспорт данных</h3>
-              </div>
-              <button type="button" onClick={() => setShowExportModal(false)} className="w-8 h-8 rounded-full text-gray-400 hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <textarea readOnly value={exportJson} onFocus={(e) => e.target.select()} className="w-full h-48 bg-black/5 dark:bg-[#1c1c1e] border border-black/5 dark:border-white/5 text-text-main font-mono text-xs rounded-xl p-3 focus:outline-none focus:border-accent-orange resize-none select-all" />
-            <div className="flex items-center justify-end gap-2.5 pt-1">
-              <button type="button" onClick={() => setShowExportModal(false)} className="px-4 py-2 text-xs font-semibold text-text-muted hover:text-text-main rounded-full transition-colors cursor-pointer">Закрыть</button>
-              <button type="button" onClick={handleCopyExport} className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-5 py-2 rounded-full flex items-center gap-1.5 hover:opacity-95 active:scale-95 transition-all shadow-md cursor-pointer">
-                {copied ? <><Check className="w-3.5 h-3.5" /> Скопировано!</> : <><Copy className="w-3.5 h-3.5" /> Скопировать</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* About Application Card */}
       <div className="bg-white border border-black/5 dark:bg-[#141414] dark:border-white/5 shadow-xl dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl sm:rounded-3xl p-6 text-center">
