@@ -190,9 +190,14 @@ export const Settings: React.FC = () => {
                   <span className="text-xs text-text-muted">Скачать .json файл</span>
                 </div>
               </div>
-              <button type="button" onClick={handleDownloadExport} className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-3.5 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer">
-                Скачать
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleDownloadExport} className="bg-[#FF7A00] text-gray-950 font-bold text-xs px-3.5 py-2 rounded-full hover:opacity-95 active:scale-95 transition-all shadow-sm cursor-pointer">
+                  Скачать
+                </button>
+                <button type="button" onClick={handleOpenExport} className="bg-black/10 dark:bg-[#141414] hover:bg-black/15 dark:hover:bg-[#202022] border border-black/5 dark:border-white/5 text-text-main font-semibold text-xs px-3.5 py-2 rounded-full active:scale-95 transition-all cursor-pointer shadow-sm">
+                  Текст
+                </button>
+              </div>
             </div>
 
             {/* Import row */}
